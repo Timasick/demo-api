@@ -60,6 +60,42 @@ public sealed class ProjectsController(ProjectService projects) : ControllerBase
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    /// <summary>Переименовать проект</summary>
+    /// <param name="id">Идентификатор проекта</param>
+    /// <param name="request">Новое название проекта</param>
+    /// <response code="200">Проект успешно переименован</response>
+    /// <response code="400">Название пустое или длиннее 100 символов</response>
+    /// <response code="404">Проект не найден</response>
+    /// <response code="409">Проект с таким названием уже существует</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType<Project>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<Project>> Rename(
+    int id,
+    RenameProjectRequest request,
+    CancellationToken ct)
+    {
+        if (await projects.NameExistsAsync(request.Name, ct))
+        {
+            var existing = await projects.GetAsync(id, ct);
+
+            if (existing?.Name != request.Name)
+            {
+                return Conflict();
+            }
+        }
+
+        var project = await projects.RenameAsync(id, request.Name, ct);
+
+        if (project is null)
+        {
+            return NotFound();
+        }
+
+        return project;
+    }
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         if (!await projects.DeleteAsync(id, ct))
@@ -75,4 +111,8 @@ public sealed class ProjectsController(ProjectService projects) : ControllerBase
 /// <summary>Создание проекта</summary>
 /// <param name="Name">Название проекта: уникальное, до 100 символов</param>
 public sealed record CreateProjectRequest(
+    [Required, StringLength(100)] string Name);
+/// <summary>Запрос на переименование проекта</summary>
+/// <param name="Name">Новое уникальное название проекта</param>
+public sealed record RenameProjectRequest(
     [Required, StringLength(100)] string Name);
