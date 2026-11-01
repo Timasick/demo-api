@@ -20,6 +20,20 @@ public sealed class ProjectService(IProjectRepository projects, ILogger<ProjectS
         log.LogInformation("Создан проект {ProjectId} «{ProjectName}»", project.Id, project.Name);
         return project;
     }
+    public async Task<Project?> RenameAsync(int id, string name, CancellationToken ct)
+    {
+        var project = await projects.RenameAsync(id, name, ct);
+
+        if (project is not null)
+        {
+            log.LogInformation(
+                "Project {ProjectId} renamed to {ProjectName}",
+                project.Id,
+                project.Name);
+        }
+
+        return project;
+    }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct)
     {

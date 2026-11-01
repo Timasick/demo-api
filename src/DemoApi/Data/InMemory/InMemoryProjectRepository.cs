@@ -38,6 +38,23 @@ public sealed class InMemoryProjectRepository(InMemoryStore store) : IProjectRep
             return Task.FromResult(project);
         }
     }
+    public Task<Project?> RenameAsync(int id, string name, CancellationToken ct)
+    {
+        lock (store.Sync)
+        {
+            var index = store.Projects.FindIndex(p => p.Id == id);
+
+            if (index < 0)
+            {
+                return Task.FromResult<Project?>(null);
+            }
+
+            var updated = store.Projects[index] with { Name = name };
+            store.Projects[index] = updated;
+
+            return Task.FromResult<Project?>(updated);
+        }
+    }
 
     public Task<bool> DeleteAsync(int id, CancellationToken ct)
     {
